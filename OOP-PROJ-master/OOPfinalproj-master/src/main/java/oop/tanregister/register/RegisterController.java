@@ -41,14 +41,14 @@ public class RegisterController {
             return;
         }
 
-        if (MongoDB.emailExists(email)) {
+        if (oop.tanregister.db.UserData.emailExists(email)) {
             showAlert(AlertType.ERROR, "Duplicate Email", "An account with this email already exists.");
             return;
         }
 
         try {
             LocalDateTime now = LocalDateTime.now();
-            MongoDB.addUser(firstName, lastName, email, phone, address, password, now, now);
+            oop.tanregister.db.UserData.addUser(firstName, lastName, email, phone, address, password, now, now);
             showAlert(AlertType.INFORMATION, "Registration Successful",
                     String.format("Welcome, %s %s!\nYou can now log in.", firstName, lastName));
             clearForm();

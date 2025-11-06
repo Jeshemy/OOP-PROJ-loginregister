@@ -9,6 +9,7 @@ module oop.tanregister.register {
     requires org.mongodb.driver.sync.client;
     requires org.mongodb.bson;
     requires org.mongodb.driver.core;
+    requires javafx.base;
 
     opens oop.tanregister.register to javafx.fxml;
     exports oop.tanregister.register;

@@ -1,6 +1,8 @@
-package oop.tanregister.register;
+package oop.tanregister.db;
 
-import com.mongodb.client.*;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import oop.tanregister.register.MongoConnection;
 import org.bson.Document;
 
 import java.nio.charset.StandardCharsets;
@@ -11,24 +13,12 @@ import java.util.Date;
 
 import static com.mongodb.client.model.Filters.eq;
 
-public class MongoDB {
-    private static final String CONNECTION_STRING = "mongodb+srv://jeshemymarie:kUkwADF4GNu4aMgE@test-cluster.6ihleq7.mongodb.net/?retryWrites=true&w=majority";
-    private static final String DB_NAME = "Userdata";
-    private static final String COLLECTION_NAME = "users";
-
-    private static MongoClient mongoClient;
-    private static MongoDatabase database;
-    private static MongoCollection<Document> collection;
-
-    static {
-        mongoClient = MongoClients.create(CONNECTION_STRING);
-        database = mongoClient.getDatabase(DB_NAME);
-        collection = database.getCollection(COLLECTION_NAME);
-    }
+public class UserData {
+    private static final MongoDatabase database = MongoConnection.getDatabase();
+    private static final MongoCollection<Document> users = database.getCollection("users");
 
     public static boolean emailExists(String email) {
-        Document user = collection.find(eq("email", email)).first();
-        return user != null;
+        return users.find(eq("email", email)).first() != null;
     }
 
     public static void addUser(String firstName, String lastName, String email,
@@ -43,16 +33,16 @@ public class MongoDB {
                 .append("phone", phone)
                 .append("address", address)
                 .append("password_hash", passwordHash)
+                .append("role", "customer")
                 .append("created_At", Date.from(createdAt.toInstant(ZoneOffset.UTC)))
                 .append("updated_At", Date.from(updatedAt.toInstant(ZoneOffset.UTC)));
 
-        collection.insertOne(doc);
+        users.insertOne(doc);
     }
 
     public static boolean validateLogin(String email, String password) throws Exception {
         String passwordHash = hashPassword(password);
-
-        Document user = collection.find(
+        Document user = users.find(
                 new Document("email", email).append("password_hash", passwordHash)
         ).first();
         return user != null;
@@ -62,9 +52,7 @@ public class MongoDB {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         byte[] hashBytes = md.digest(password.getBytes(StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
-        for (byte b : hashBytes) {
-            sb.append(String.format("%02x", b));
-        }
+        for (byte b : hashBytes) sb.append(String.format("%02x", b));
         return sb.toString();
     }
 }

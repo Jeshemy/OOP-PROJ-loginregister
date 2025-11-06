@@ -27,16 +27,16 @@ public class LoginController {
             return;
         }
 
-        if (MongoDB.validateLogin(email, password)) {
+        if (oop.tanregister.db.UserData.validateLogin(email, password)) {
             showAlert(AlertType.INFORMATION, "Login Successful", "Welcome back!");
 
             try {
                 Stage currentStage = (Stage) loginButton.getScene().getWindow();
 
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/oop/tanregister/register/mainmenu.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/oop/tanregister/register/adminmenu.fxml"));
                 Parent root = loader.load();
 
-                Scene scene = new Scene(root, 800, 500);
+                Scene scene = new Scene(root, 1100, 600);
                 currentStage.setTitle("Main Menu");
                 currentStage.setScene(scene);
                 currentStage.show();

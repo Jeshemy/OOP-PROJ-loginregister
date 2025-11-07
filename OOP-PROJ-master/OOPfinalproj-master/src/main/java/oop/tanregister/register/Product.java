@@ -9,6 +9,7 @@ public class Product {
     private int stock;
     private double price;
     private Date date;
+    private byte[] imageBytes; // image data
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -27,4 +28,7 @@ public class Product {
 
     public Date getDate() { return date; }
     public void setDate(Date date) { this.date = date; }
+
+    public byte[] getImageBytes() { return imageBytes; }
+    public void setImageBytes(byte[] imageBytes) { this.imageBytes = imageBytes; }
 }

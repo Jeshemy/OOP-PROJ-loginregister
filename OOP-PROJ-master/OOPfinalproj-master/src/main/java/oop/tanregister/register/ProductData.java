@@ -5,7 +5,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import oop.tanregister.model.Product;
-
+import org.bson.types.Binary;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,7 +36,8 @@ public class ProductData {
                 .append("type", p.getType())
                 .append("stock", p.getStock())
                 .append("price", p.getPrice())
-                .append("date", new Date());
+                .append("date", new Date())
+                .append("image", p.getImageBytes());
         collection.insertOne(doc);
     }
 
@@ -46,12 +47,19 @@ public class ProductData {
                         .append("type", p.getType())
                         .append("stock", p.getStock())
                         .append("price", p.getPrice())
-                        .append("date", new Date()));
+                        .append("date", new Date())
+                        .append("image", p.getImageBytes()));
         collection.updateOne(eq("productId", p.getId()), update);
     }
 
     public static void delete(String id) {
-        collection.deleteOne(eq("productId", id));
+        try {
+            MongoCollection<Document> collection = MongoConnection.getDatabase().getCollection("products");
+            collection.deleteOne(eq("productId", id));
+            System.out.println("Product with ID " + id + " deleted successfully.");
+        } catch (Exception e) {
+            System.err.println("Error deleting product: " + e.getMessage());
+        }
     }
 
     private static Product fromDoc(Document d) {
@@ -62,6 +70,10 @@ public class ProductData {
         p.setStock(d.getInteger("stock", 0));
         p.setPrice(d.getDouble("price"));
         p.setDate(d.getDate("date"));
+        if (d.containsKey("image") && d.get("image") instanceof byte[]) {
+            p.setImageBytes((byte[]) d.get("image"));
+        }
         return p;
     }
+
 }

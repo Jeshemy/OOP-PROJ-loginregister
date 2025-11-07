@@ -5,19 +5,12 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import oop.tanregister.model.Product;
-import org.bson.types.Binary;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
+import java.util.*;
 import static com.mongodb.client.model.Filters.eq;
 
 public class ProductData {
     private static final MongoDatabase database = MongoConnection.getDatabase();
-    private static final MongoCollection<Document> users = database.getCollection("products");
-
-    private static final MongoCollection<Document> collection =
-            MongoConnection.getDatabase().getCollection("products");
+    private static final MongoCollection<Document> collection = database.getCollection("products");
 
     public static List<Product> findAll() {
         List<Product> list = new ArrayList<>();
@@ -53,13 +46,7 @@ public class ProductData {
     }
 
     public static void delete(String id) {
-        try {
-            MongoCollection<Document> collection = MongoConnection.getDatabase().getCollection("products");
-            collection.deleteOne(eq("productId", id));
-            System.out.println("Product with ID " + id + " deleted successfully.");
-        } catch (Exception e) {
-            System.err.println("Error deleting product: " + e.getMessage());
-        }
+        collection.deleteOne(eq("productId", id));
     }
 
     private static Product fromDoc(Document d) {
@@ -70,10 +57,15 @@ public class ProductData {
         p.setStock(d.getInteger("stock", 0));
         p.setPrice(d.getDouble("price"));
         p.setDate(d.getDate("date"));
-        if (d.containsKey("image") && d.get("image") instanceof byte[]) {
-            p.setImageBytes((byte[]) d.get("image"));
+
+        Object imageData = d.get("image");
+        if (imageData instanceof org.bson.types.Binary) {
+            p.setImageBytes(((org.bson.types.Binary) imageData).getData());
+        } else if (imageData instanceof byte[]) {
+            p.setImageBytes((byte[]) imageData);
+        } else {
+            p.setImageBytes(null);
         }
         return p;
     }
-
 }

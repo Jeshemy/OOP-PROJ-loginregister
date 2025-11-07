@@ -14,16 +14,15 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.cell.PropertyValueFactory;
 import oop.tanregister.model.Product;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.Optional;
 
 public class AdminMenuController implements Initializable {
 
-    public Button customerButton;
     @FXML private TableView<Product> productTable;
     @FXML private TableColumn<Product, String> productID;
     @FXML private TableColumn<Product, String> productName;
@@ -44,6 +43,7 @@ public class AdminMenuController implements Initializable {
     @FXML private Label SignOut;
     @FXML private ImageView productImageView;
 
+    // will hold image bytes for upload or display
     private byte[] currentImageBytes;
 
     @Override
@@ -59,6 +59,7 @@ public class AdminMenuController implements Initializable {
 
         loadProducts();
 
+        // when you click/select a product in the table
         productTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 IDField.setText(newSelection.getId());
@@ -66,10 +67,12 @@ public class AdminMenuController implements Initializable {
                 TypeField.setValue(newSelection.getType());
                 StockField.setText(String.valueOf(newSelection.getStock()));
                 Price.setText(String.valueOf(newSelection.getPrice()));
+
                 currentImageBytes = newSelection.getImageBytes();
 
+                // ✅ show image when selected
                 if (currentImageBytes != null && currentImageBytes.length > 0) {
-                    productImageView.setImage(new Image(new java.io.ByteArrayInputStream(currentImageBytes)));
+                    productImageView.setImage(new Image(new ByteArrayInputStream(currentImageBytes)));
                 } else {
                     productImageView.setImage(null);
                 }
@@ -77,12 +80,14 @@ public class AdminMenuController implements Initializable {
         });
     }
 
+    // load products from MongoDB
     private void loadProducts() {
         List<Product> products = ProductData.findAll();
         ObservableList<Product> productList = FXCollections.observableArrayList(products);
         productTable.setItems(productList);
     }
 
+    // add product
     @FXML
     private void handleAdd(ActionEvent event) {
         String id = IDField.getText().trim();
@@ -91,23 +96,15 @@ public class AdminMenuController implements Initializable {
         String stockText = StockField.getText().trim();
         String priceText = Price.getText().trim();
 
-        if (id.isEmpty() || name.isEmpty() || type.isEmpty() ||
-                stockText.isEmpty() || priceText.isEmpty()) {
+        if (id.isEmpty() || name.isEmpty() || type.isEmpty() || stockText.isEmpty() || priceText.isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Missing Information", "Please fill in all fields.");
             return;
         }
 
-        int stock;
-        double price;
         try {
-            stock = Integer.parseInt(stockText);
-            price = Double.parseDouble(priceText);
-        } catch (NumberFormatException e) {
-            showAlert(Alert.AlertType.ERROR, "Invalid Input", "Stock and Price must be numeric values.");
-            return;
-        }
+            int stock = Integer.parseInt(stockText);
+            double price = Double.parseDouble(priceText);
 
-        try {
             Product product = new Product();
             product.setId(id);
             product.setName(name);
@@ -122,41 +119,28 @@ public class AdminMenuController implements Initializable {
             clearForm();
 
             showAlert(Alert.AlertType.INFORMATION, "Success", "Product added successfully!");
+        } catch (NumberFormatException e) {
+            showAlert(Alert.AlertType.ERROR, "Invalid Input", "Stock and Price must be numbers.");
         } catch (Exception e) {
-            e.printStackTrace();
             showAlert(Alert.AlertType.ERROR, "Database Error", e.getMessage());
         }
     }
 
+    // update product
     @FXML
     private void handleUpdate(ActionEvent event) {
         Product selectedProduct = productTable.getSelectionModel().getSelectedItem();
         if (selectedProduct == null) {
-            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a product to update.");
-            return;
-        }
-
-        String id = IDField.getText().trim();
-        String name = ProductNameField.getText().trim();
-        String type = (TypeField.getValue() != null) ? TypeField.getValue() : "";
-        String stockText = StockField.getText().trim();
-        String priceText = Price.getText().trim();
-
-        if (id.isEmpty() || name.isEmpty() || type.isEmpty() ||
-                stockText.isEmpty() || priceText.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Missing Information", "Please fill in all fields.");
+            showAlert(Alert.AlertType.WARNING, "No Selection", "Select a product to update.");
             return;
         }
 
         try {
-            int stock = Integer.parseInt(stockText);
-            double price = Double.parseDouble(priceText);
-
-            selectedProduct.setId(id);
-            selectedProduct.setName(name);
-            selectedProduct.setType(type);
-            selectedProduct.setStock(stock);
-            selectedProduct.setPrice(price);
+            selectedProduct.setId(IDField.getText().trim());
+            selectedProduct.setName(ProductNameField.getText().trim());
+            selectedProduct.setType(TypeField.getValue());
+            selectedProduct.setStock(Integer.parseInt(StockField.getText().trim()));
+            selectedProduct.setPrice(Double.parseDouble(Price.getText().trim()));
             selectedProduct.setDate(new Date());
             selectedProduct.setImageBytes(currentImageBytes);
 
@@ -164,11 +148,15 @@ public class AdminMenuController implements Initializable {
             loadProducts();
 
             showAlert(Alert.AlertType.INFORMATION, "Updated", "Product updated successfully!");
+        } catch (NumberFormatException e) {
+            showAlert(Alert.AlertType.ERROR, "Invalid Input", "Stock and Price must be numbers.");
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Error", e.getMessage());
         }
     }
 
+    // delete product
+    @FXML
     public void handleDelete(ActionEvent event) {
         Product selectedProduct = productTable.getSelectionModel().getSelectedItem();
         if (selectedProduct == null) {
@@ -179,7 +167,7 @@ public class AdminMenuController implements Initializable {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Confirm Deletion");
         confirm.setHeaderText(null);
-        confirm.setContentText("Are you sure you want to delete " + selectedProduct.getName() + "?");
+        confirm.setContentText("Delete " + selectedProduct.getName() + "?");
 
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
@@ -190,6 +178,7 @@ public class AdminMenuController implements Initializable {
         }
     }
 
+    // import image
     @FXML
     public void handleImport(ActionEvent event) {
         FileChooser fileChooser = new FileChooser();
@@ -210,11 +199,12 @@ public class AdminMenuController implements Initializable {
                 productImageView.setImage(new Image(file.toURI().toString()));
 
             } catch (IOException e) {
-                showAlert(Alert.AlertType.ERROR, "File Error", "Could not read image file.");
+                showAlert(Alert.AlertType.ERROR, "File Error", "Could not load image.");
             }
         }
     }
 
+    // clear all form fields
     @FXML
     public void handleClear(ActionEvent event) {
         clearForm();
@@ -230,7 +220,9 @@ public class AdminMenuController implements Initializable {
         currentImageBytes = null;
     }
 
-    public void handleSignOut(MouseEvent mouseEvent) throws Exception {
+    // sign out
+    @FXML
+    public void handleSignOut(MouseEvent event) throws Exception {
         Stage currentStage = (Stage) SignOut.getScene().getWindow();
         currentStage.close();
         Login loginApp = new Login();
@@ -238,6 +230,7 @@ public class AdminMenuController implements Initializable {
         loginApp.start(stage);
     }
 
+    // alert helper
     private void showAlert(Alert.AlertType type, String title, String message) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
